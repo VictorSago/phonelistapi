@@ -27,7 +27,6 @@ def read_phonelist(conn):
 
 def read_phone(conn, name):
     cur = conn.cursor()
-    #print(f"SELECT phone FROM phonelist WHERE name = '{name}';")            #TODO cleanup diagnostics
     statement = f"SELECT phone FROM {tablename} WHERE name = :name;"
     cur.execute(statement, {"name": name})
     rows = cur.fetchall()
@@ -36,7 +35,6 @@ def read_phone(conn, name):
 
 def read_name(conn, phone):
     cur = conn.cursor()
-    #print(f"SELECT name FROM phonelist WHERE phone = '{phone}';")           #TODO cleanup diagnostics
     statement = f"SELECT name FROM {tablename} WHERE phone = :phone;"
     cur.execute(statement, {"phone": phone})
     rows = cur.fetchall()
@@ -56,28 +54,24 @@ def delete_phone(conn, name):
     cur.close()
 
 def save_phonelist(conn):
-    #cur = conn.cursor()
     try:
-        #cur.execute("COMMIT;")
         conn.commit()
     except Error as e:
         print("No changes!")
         print(e)
-    #cur.close()
 
 
 app = Flask(__name__)
 
 @app.route("/")
 def start():
-    #conn = sqlite3.connect("phone.db")
     connection = get_connection(db_file)
     now = datetime.datetime.now()
-    current_date = [str(now.year%100), str(now.month), str(now.day)]
-    if len(current_date[1])<2:
-        current_date[1] = '0'+current_date[1]
-    if len(current_date[2])<2:
-        current_date[2] = '0'+current_date[2]
+    current_date = [str(now.year), str(now.month), str(now.day)]
+    if len(current_date[1]) < 2:
+        current_date[1] = '0' + current_date[1]
+    if len(current_date[2]) < 2:
+        current_date[2] = '0' + current_date[2]
     smart = read_phonelist(connection)
     save_phonelist(connection)
     connection.close()
@@ -85,7 +79,6 @@ def start():
 
 @app.route("/delete")
 def delete_func():
-    #conn = sqlite3.connect("phone.db")
     connection = get_connection(db_file)
     name=request.args['name']
     delete_phone(connection, name)
@@ -95,7 +88,6 @@ def delete_func():
 
 @app.route("/insert")
 def insert_func():
-    #conn = sqlite3.connect("phone.db")
     connection = get_connection(db_file)
     name=request.args['name']
     phone=request.args['phone']
@@ -106,34 +98,33 @@ def insert_func():
 
 @app.route("/api")
 def api_func():
-    #conn = sqlite3.connect("phone.db")
     connection = get_connection(db_file)
     args=request.args
     action = args.get('action', default="Bad action", type=str)
+    ret = None
     if action == "Bad action":
-        connection.close()
-        return render_template('api_usage.html', action=action)
-    if action == 'phone':
+        ret = render_template('api_usage.html', action=action)
+    elif action == 'phone':
         name = args.get('name', default="No name", type=str)
         if name == "No name":
-            connection.close()
-            return render_template('api_usage.html', action=action)
-        phone = read_phone(connection, name)
-        connection.close()
-        if len(phone) < 1:
-            return "Not Found"
-        return phone[0][0]
+            ret = render_template('api_usage.html', action=action)
+        else:
+            phone = read_phone(connection, name)
+            if len(phone) < 1:
+                ret = "Not Found"
+            else:
+                ret = phone[0][0]
     elif action == 'name':
         phone = args.get('phone', default="No phone", type=str)
         if phone == "No phone":
-            connection.close()
-            return render_template('api_usage.html', action=action)
-        name = read_name(connection, phone)
-        connection.close()
-        if len(name) < 1:
-            return "Not Found"
-        return name[0][0]
+            ret = render_template('api_usage.html', action=action)
+        else:
+            if len(name) < 1:
+                ret = "Not Found"
+            else:
+                ret = name[0][0]
     else:
-        connection.close()
-        return f"Unknown action: '{action}'"
+        ret = f"Unknown action: '{action}'"
+    connection.close()
+    return ret
     
