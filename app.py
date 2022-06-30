@@ -18,8 +18,9 @@ def get_connection(dbfile):
     return conn
 
 def read_phonelist(conn):
+    statement = f"SELECT * FROM {tablename};"
     cur = conn.cursor()
-    cur.execute("SELECT * FROM phonelist;")
+    cur.execute(statement)
     rows = cur.fetchall()
     cur.close()
     return rows
@@ -27,7 +28,8 @@ def read_phonelist(conn):
 def read_phone(conn, name):
     cur = conn.cursor()
     #print(f"SELECT phone FROM phonelist WHERE name = '{name}';")            #TODO cleanup diagnostics
-    cur.execute(f"SELECT phone FROM phonelist WHERE name = '{name}';")
+    statement = f"SELECT phone FROM {tablename} WHERE name = :name;"
+    cur.execute(statement, {"name": name})
     rows = cur.fetchall()
     cur.close()
     return rows
@@ -35,28 +37,33 @@ def read_phone(conn, name):
 def read_name(conn, phone):
     cur = conn.cursor()
     #print(f"SELECT name FROM phonelist WHERE phone = '{phone}';")           #TODO cleanup diagnostics
-    cur.execute(f"SELECT name FROM phonelist WHERE phone = '{phone}';")
+    statement = f"SELECT name FROM {tablename} WHERE phone = :phone;"
+    cur.execute(statement, {"phone": phone})
     rows = cur.fetchall()
     cur.close()
     return rows
 
 def add_phone(conn, name, phone):
     cur = conn.cursor()
-    cur.execute(f"INSERT INTO phonelist VALUES ('{name}', '{phone}');")
+    statement = f"INSERT INTO {tablename} (name, phone) VALUES (:name, :phone);"
+    cur.execute(statement, {"name": name, "phone": phone})
     cur.close()
 
 def delete_phone(conn, name):
+    statement = f"DELETE FROM {tablename} WHERE name = :name"
     cur = conn.cursor()
-    cur.execute(f"DELETE FROM phonelist WHERE name = '{name}';")
+    cur.execute(statement, {"name": name})
     cur.close()
 
 def save_phonelist(conn):
-    cur = conn.cursor()
+    #cur = conn.cursor()
     try:
-        cur.execute("COMMIT;")
-    except:
+        #cur.execute("COMMIT;")
+        conn.commit()
+    except Error as e:
         print("No changes!")
-    cur.close()
+        print(e)
+    #cur.close()
 
 
 app = Flask(__name__)
@@ -130,4 +137,3 @@ def api_func():
         connection.close()
         return f"Unknown action: '{action}'"
     
-
